@@ -83,23 +83,24 @@ function countarr(arr,  i, c)
 BEGIN \
 {
     diravg(ARGV[1]) # returns array 'arr'
-    #exit
+
 #
 #
 #   func diravg -- creates 'arr' array object where the index specifies the
 #                   directory name. The values are arranged as follows:
 #
-#                   val1: number of subdirectories
-#                   val2: number of files
-#                   val3: number of zero-byte files
-#                   val4: number of non-empty files
-#                   val5: size of smallest file in bytes
-#                   val6: size of largest file in bytes
-#                   val7: sum of all files in bytes
+#                   dirc:   number of subdirectories
+#                   fc:     number of files
+#                   fz:     number of zero-byte files
+#                   fnz:    number of non-empty files
+#                   fmin:   size of smallest file in bytes
+#                   fmax:   size of largest file in bytes
+#                   fsum:   sum of all files in bytes
 #
 #   Array values can be split() using comma as the field delimiter.
-#   Values can be null or a positive integer, for example if val2 (num files)
-#   is null, there won't be any file statistics to display.
+#   Values can be null or a positive integer. Testing for null values can save
+#   a lot of work, for example if val2 (num files) is null, there won't be any
+#   available file statistics to display.
 #
 
     fmt_dirc = "%7s"
@@ -133,14 +134,12 @@ BEGIN \
         fnz = row[4]
         fmin = row[5]
         fmax = row[6]
-        fsum = row[7]
+        favg = fsum = row[7]
 
         # zero-byte files have no weight in our avg file size
         # calculation
         if (fnz != "")
             favg = sprintf("%d", (fsum / fnz))
-        else
-            favg = fsum
 
         # per directory stats
         printf fmt_dirc, dirc   # dir count
@@ -225,6 +224,8 @@ BEGIN \
     totaldirs = countarr(arr)
     divisor = countarr(withdata)
 
+    print ""
+
     # Total directories processed:
     print "Total dirs:", totaldirs
 
@@ -252,7 +253,8 @@ BEGIN \
     printf "    %-s %d\n", "containing non-empty files:", divisor
 
     # Directories containing empty and non-empty files:
-    printf "    %-s %d\n", "containing empty and non-empty files:", countarr(withmix)
+    printf "    %-s %d\n", "containing empty and non-empty files:",
+           countarr(withmix)
     }
 
     # Total files:
