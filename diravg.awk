@@ -6,14 +6,10 @@
 #
 #   BUGS:
 #           * won't handle non-printing characters in directory names
-#           * this started as a futile recursion exercise and it's slow: we
-#             call 'ls' on each directory. Performance will improve once
-#             we make diravg() call 'ls -laR' once
+#           * won't handle directories with over seven spaces in their name
 #
 #   TODO:
 #           * function to convert bytes to specified units
-#           * switch to system() in diravg() to evaluate 'ls' return status
-#           * Think about reporting
 #           * repeat heading every getenv[LINES]
 #           * allow spaces in directory names passed via ARGV
 #           * display stats for each directory passed via ARGV
@@ -22,65 +18,59 @@
 function diravg(dir,    lno, dirc, fc, fmin, fzero, fnzero,
                 fsum, fmax, name, i, regex)
 {
-    while (("ls -la " dir | getline) > 0)
+    path = dir
+    while (("ls -laR " dir | getline) > 0)
     {
-        lno++
-        if (lno > 1)
+        if ($0 ~ /^$/)
         {
-            # skip over block and character devices, symlinks, pipes,
-            # unix sockets and default unix dot directories
-            if ($9 == "." || $9 == ".." || $1 ~ /^(l|b|c|p|s)/)
-                continue
-
-            if ($1 ~ /^-/)
-            {
-                fc++
-
-                if ($5 == 0)
-                    fzero++
-                else
-                    fnzero++
-
-                if ($5 == 0 || $5 < fmin || fmin == "")
-                    fmin = $5
-
-                if ($5 >= fmax)
-                    fmax = $5
-
-                if (fnzero)
-                    fsum += $5
-            }
-
-            if ($1 ~ /^d/)
-            {
-                dirc++
-
-                # deal with directories with spaces by enclosing them
-                # within single-quotes, then recurse
-                if (NF > 9)
-                {
-                    name = $0
-                    for (i=1; i<=8; i++)
-                    {
-                        regex = ( "[ ]*" $i "[ ]*" )
-                        sub(regex, "", name)
-                    }
-                    name = (  dir "/'" name "'" )
-                }
-                else
-                    name = ( dir "/" $9 )
-
-                diravg(name)
-            }
-            arr[dir] = ( dirc "," fc "," fzero "," fnzero "," fmin "," \
-                fmax "," fsum )
+            dirc = ""
+            fc = ""
+            fzero = ""
+            fnzero = ""
+            fmin = ""
+            fmax = ""
+            fsum = ""
+            continue
         }
+
+        if ($0 ~ /:$/)
+        {
+            sub(/:$/, "")
+            path = $0
+            continue
+        }
+
+        # skip over block and character devices, symlinks, pipes,
+        # unix sockets and default unix dot directories
+        if ($9 == "." || $9 == ".." || $1 ~ /^(l|b|c|p|s)/)
+            continue
+
+        if ($1 ~ /^-/)
+        {
+            fc++
+
+            if ($5 == 0)
+                fzero++
+            else
+                fnzero++
+
+            if ($5 == 0 || $5 < fmin || fmin == "")
+                fmin = $5
+
+            if ($5 >= fmax)
+                fmax = $5
+
+            if (fnzero)
+                fsum += $5
+        }
+
+        if ($1 ~ /^d/)
+            dirc++
+
+        arr[path] = ( dirc "," fc "," fzero "," fnzero "," fmin "," \
+                        fmax "," fsum )
     }
-
-    if (lno < 4)    # directory contains neither files nor subdirectories
-        arr[dir] = ",,,,,,"
-
-    close("ls -la " dir)
+    close("ls -laR " dir)
 }
 
 function countarr(arr,  i, c)
@@ -93,6 +83,7 @@ function countarr(arr,  i, c)
 BEGIN \
 {
     diravg(ARGV[1]) # returns array 'arr'
+    #exit
 #
 #
 #   func diravg -- creates 'arr' array object where the index specifies the
