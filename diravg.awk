@@ -5,13 +5,12 @@
 #   Usage: ./diravg.awk /path/to/tree
 #
 #   BUGS:
-#           * won't handle non-printing characters in directory names
 #           * won't handle directories with over seven spaces in their name
 #
 #   TODO:
 #           * function to convert bytes to specified units
 #           * repeat heading every getenv[LINES]
-#           * allow spaces in directory names passed via ARGV
+#           * allow spaces in names of directories passed via ARGV
 #           * display stats for each directory passed via ARGV
 #
 
@@ -158,6 +157,12 @@ BEGIN \
             emptydirs[dir]++
         }
 
+        # Directories containing just files
+        if (dirc == "" && fc != "")
+        {
+            withfiles[dir]++
+        }
+
         # Directories with files and/or directories
         if (dirc != "" || fc != "")
         {
@@ -168,12 +173,6 @@ BEGIN \
         if (dirc != "" && fc == "")
         {
             withdirs[dir]++
-        }
-
-        # Directories containing just files
-        if (dirc == "" && fc != "")
-        {
-            withfiles[dir]++
         }
 
         # Directories containing both files and directories
