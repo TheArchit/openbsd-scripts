@@ -129,11 +129,6 @@ BEGIN \
         fmax = row[6]
         favg = fsum = row[7]
 
-        # zero-byte files have no weight in our avg file size
-        # calculation
-        if (fnz != "")
-            favg = sprintf("%d", (fsum / fnz))
-
         # per directory stats
         printf fmt_dirc, dirc   # dir count
         printf fmt_fc, fc       # file count
@@ -166,6 +161,10 @@ BEGIN \
 
         if (fnz != "")
         {
+            # zero-byte files have no weight in our avg file size
+            # calculation
+            favg = sprintf("%d", (fsum / fnz))
+
             withdata[dir]++
             datafiles += fnz
 
@@ -183,9 +182,7 @@ BEGIN \
         }
 
         if (favg != "")
-        {
             datasize += favg
-        }
     }
 
     totaldirs = countarr(arr)
@@ -194,7 +191,6 @@ BEGIN \
     print ""
 
     print "Total dirs:", totaldirs
-
     print "Empty dirs:", countarr(emptydirs) + 0
 
     if (totaldirs > 1)
@@ -224,7 +220,6 @@ BEGIN \
     if (totalfiles)
     {
         print "Empty files:", emptyfiles + 0
-
         print "Non-empty files:", datafiles + 0
 
         if (divisor)
