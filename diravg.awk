@@ -12,6 +12,7 @@
 #           * function to convert bytes to specified units
 #           * repeat heading every getenv[LINES]
 #           * allow spaces in names of directories passed via ARGV
+#           * allow multiple directories to be passed via ARGV
 #           * display stats for each directory passed via ARGV
 #
 
@@ -144,69 +145,43 @@ BEGIN \
         printf fmt_favg, favg   # average file size
         printf fmt_dir, dir     # directory path
 
-        # Empty directories
-        if (dirc == "" && fc == "")
+        if (dirc == "")
         {
-            emptydirs[dir]++
+            if (fc == "")
+                emptydirs[dir]++
+            else
+                withfiles[dir]++
         }
-
-        # Directories containing just files
-        if (dirc == "" && fc != "")
-        {
-            withfiles[dir]++
-        }
-
-        # Directories with files and/or directories
-        if (dirc != "" || fc != "")
-        {
-            nonemptydirs[dir]++
-        }
-
-        # Directories containing only other subdirectories
-        if (dirc != "" && fc == "")
-        {
+        else if (fc == "")
             withdirs[dir]++
-        }
 
-        # Directories containing both files and directories
-        if (dirc != "" && fc != "")
-        {
+        else if (fc != "")
             withboth[dir]++
-        }
 
-        # Directories containing empty files
+        else
+            nonemptydirs[dir]++
+
         if (fz != "")
-        {
             withempty[dir]++
+
+        if (fnz != "")
+        {
+            withdata[dir]++
+            datafiles += fnz
+
+            if (fz != "")
+                withmix[dir]++
         }
 
-        # Directories containing non-empty files
-        if (fnz != "")
-            withdata[dir]++
-
-        # Directories containing empty and non-empty files
-        if (fz != "" && fnz != "")
-            withmix[dir]++
-
-        # Total number of files
         if (fc != "")
         {
             totalfiles += fc
+            nonemptydirs[dir]++
+
+            if (fz != "")
+                emptyfiles += fz
         }
 
-        # Empty files
-        if (fc != "" && fz != "")
-        {
-            emptyfiles += fz
-        }
-
-        # Number of files with data
-        if (fnz != "")
-        {
-            datafiles += fnz
-        }
-
-        # Sum of file averages
         if (favg != "")
         {
             datasize += favg
