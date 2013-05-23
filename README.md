@@ -31,8 +31,8 @@ e.g.
 srcupdate:
 ---------
 Updates the OpenBSD ports tree (/usr/ports), userland (/usr/src) and kernel
-sources (/usr/src/sys) from CVS. The folloving variables should be adusted to
-match your OpenBSD branch and preferred anonymous CVS server.
+sources (/usr/src/sys) from CVS. The folloving variables should be adjusted to
+match the OpenBSD branch and preferred anonymous CVS server.
 
     cvs_repos="anoncvs@anoncvs.spacehopper.org:/cvs"
     branch="stable" # "current" or "stable"
