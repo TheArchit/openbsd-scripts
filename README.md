@@ -7,10 +7,8 @@ parameters with 'tunefs'.
 
 fsdump:
 ------
-I wrote this to take automated differential backups from cron after an initial
-dump of any filesystem has been taken. It runs 'dump w' and increases the dump
-level according to a table. Finally takes a differential dump based on the
-auto-selected level.
+Performs a dump of each filesystem listed by "dump w" in an odd/even rotation
+scheme: 0,3,4,7,8,1,2,5,6,9,0
 
 e.g.
 
@@ -32,16 +30,16 @@ e.g.
 
 srcupdate:
 ---------
-Updates OpenBSD Ports (/usr/ports), userland sources (/usr/src) and kernel
-sources /usr/src/sys from CVS. The folloving variables should be adusted to
-match your OpenBSD branch and preferred CVS sources.
+Updates the OpenBSD ports tree (/usr/ports), userland (/usr/src) and kernel
+sources (/usr/src/sys) from CVS. The folloving variables should be adusted to
+match your OpenBSD branch and preferred anonymous CVS server.
 
     cvs_repos="anoncvs@anoncvs.spacehopper.org:/cvs"
     branch="stable" # "current" or "stable"
 
-It logs its progress via syslog to the daemon facility and when source updates
+'srcupdate' logs its progress via syslog to the daemon facility. When updates
 are found, it creates a symlink to the updated source under /var/srcupdate
 
-For the time being it assumes you're on OpenBSD_5.3 but I'll keep making
-improvements.
+For the time being it assumes OpenBSD_5.3 but I'll keep making adjustments to
+add more flexibility.
 
