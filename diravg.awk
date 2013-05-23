@@ -193,59 +193,45 @@ BEGIN \
 
     print ""
 
-    # Total directories processed:
     print "Total dirs:", totaldirs
 
-    # Empty directories:
     print "Empty dirs:", countarr(emptydirs) + 0
 
     if (totaldirs > 1)
     {
-        # Non-empty directories:
         print "Non-empty dirs:", countarr(nonemptydirs) + 0
 
-        # Directories containing only subdirectories, no files:
         printf "    %-s %d\n", "containing only subdirs:",
                countarr(withdirs) + 0
 
-        # Directories containing >= 1 file(s), no subdirectories:
         printf "    %-s %d\n", "containing only files:",
                countarr(withfiles) + 0
 
-        # Directories containing both >= 1 file(s) and >= 1 directory(ies)
         printf "    %-s %d\n", "containing files and subdirs:",
                countarr(withboth) + 0
 
-        # Directories containing zero-byte files:
         printf "    %-s %d\n", "containing empty files:",
                 countarr(withempty) + 0
 
-        # Directories containing non-empty files:
         printf "    %-s %d\n", "containing non-empty files:", divisor
 
-        # Directories containing empty and non-empty files:
         printf "    %-s %d\n", "containing empty and non-empty files:",
                countarr(withmix)
     }
 
-    # Total files:
     print "Total files:", totalfiles + 0
 
     if (totalfiles)
     {
-        # Zero-byte files:
         print "Empty files:", emptyfiles + 0
 
-        # Files >= 1 bytes:
         print "Non-empty files:", datafiles + 0
 
         if (divisor)
         {
-            # Average number of non-empty files per non-empty dir:
             printf "    %-s %d\n", "avg. count per dir:",
                    datafiles / divisor
 
-            # Average size of non-empty files size per non-empty dir:
             printf "    %-s %d\n", "avg. size per dir:",
                    datasize / divisor
         }
