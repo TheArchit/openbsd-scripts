@@ -19,27 +19,34 @@ BEGIN {
     getdate | getline date ; close(getdate)
 
     # learn mount options from fstab
-    while ((getline < "/etc/fstab") > 0) {
+    while ((getline < "/etc/fstab") > 0)
+    {
         mntopts[$2] = $4
     }
     close("/etc/fstab")
 
-    while ((listfs | getline) > 0) {
+    while ((listfs | getline) > 0)
+    {
         remount = 0
 
         # skip first line of dump's output
         if (!lno) { lno++ ; continue }
         gsub(/[ \t\\(\\),>]+/," ")
 
-        if (!root && $2 == "/") {
+        if (!root && $2 == "/")
+        {
             fs = "root" # found the root fs
             root++
-        } else {
+        }
+        else
+        {
             # this isn't the root (/) filesystem, so try to
             # remount it in read-only and force an fsck
             fs = $2 ; sub(/^\//,"",fs) ; sub(/\//,"_",fs)
             mntargs = ( "ro " $2 " >/dev/null 2>&1" )
-            if (system(mntcmd mntargs) == 0) {
+
+            if (system(mntcmd mntargs) == 0)
+            {
                 remount = 1
                 print "Filesystem remounted as rdonly:", $2
                 print "Running fsck:", $2
@@ -70,7 +77,8 @@ BEGIN {
         system(do_dump) ; close(do_dump)
 
         # mount the filesystem with options from fstab
-        if ( remount == 1 && $2 in mntopts ) {
+        if ( remount == 1 && $2 in mntopts )
+        {
             print "Remounting", $2, "with options:", mntopts[$2]
             system(mntcmd mntopts[$2] " " $2)
             close(mntcmd mntopts[$2] " " $2)
