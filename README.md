@@ -2,8 +2,8 @@ Utilities to do various things on OpenBSD systems, possibly Linux as well.
 
 diravg.awk:
 --------------
-Utility that displays statistics which may be useful for tuning filesystem
-parameters with 'tunefs'.
+Utility that displays file distribution statistics which may be useful for 
+tuning filesystem parameters with 'tunefs'.
 
 fsdump:
 ------
@@ -43,3 +43,16 @@ are found, it creates a symlink to the updated source under /var/srcupdate
 For the time being it assumes OpenBSD_5.3 but I'll keep making adjustments to
 add more flexibility.
 
+libdeps.awk: (indev)
+-----------
+Tool to copy the specified binary and all its library dependencies to a chroot
+environment
+
+quotadistrib.py: (indev)
+---------------
+Take a prototype user and apply its disk quotas to all the users in the 
+specified groups
+
+quotadistrib.awk: (indev)
+----------------
+Same as quotadistrib.py but written in AWK
