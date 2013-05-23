@@ -1,0 +1,252 @@
+#!/bin/ksh
+
+# update_cvs -- updates OpenBSD sources from CVS and creates symlinks to
+#               updated packages under /var/db/srcupdate
+#
+# TODO:
+#       * lock execution
+#       * auto-select closest cvs server based on location
+
+progname="${0##*/}"
+cvs_repos="anoncvs@anoncvs.spacehopper.org:/cvs"
+dbroot="/var/db/${progname}"
+sources="openbsd ports xenocara"
+branch="stable" # "current" or "stable"
+
+TRUE="0"
+FALSE="1"
+DEBUGLVL="2" # 0, 1, 2
+
+# Exception handling
+E_LINKDB_CREATE="30"
+E_LINKDB_NOACCESS="31"
+E_CVS_UPDATE="40"
+E_CVS_DIR_NOT_EXIST="41"
+E_UNDEFINED_SRC="42"
+E_MAKE_KERN_LINK="53"
+E_MAKE_BSD_LINK="54"
+E_MAKE_PORT_LINK="55"
+E_MAKE_X11_LINK="56"
+E_INT="60"
+
+debuglvl() { return ${DEBUGLVL} ; }
+
+except()
+{
+    local SEV=
+    case ${1} in
+        ${E_LINKDB_CREATE})
+            SEV="error"
+            log "failed to create link database dir: ${dbroot}"
+            return ${1}
+        ;;
+        ${E_LINKDB_NOACCESS})
+            log "failed to access: ${dbroot}"
+            return ${1}
+        ;;
+        ${E_CVS_UPDATE})
+            log "[cvs] failed to update ${source}: ${tree}"
+            return ${1}
+        ;;
+        ${E_CVS_DIR_NOT_EXIST})
+            log "[cvs] failed to access: ${tree}. ${source} local sources unvailable"
+            return ${1}
+        ;;
+        ${E_UNDEFINED_SRC})
+            log "unknown cvs source: ${source}"
+            return ${1}
+        ;;
+        ${E_MAKE_KERN_LINK})
+            log "failed to create link to $(machine) kernel config: ${target}"
+            return ${1}
+        ;;
+        ${E_MAKE_BSD_LINK})
+            log "failed to create link to ${source} source: ${target}"
+            return ${1}
+        ;;
+        ${E_MAKE_PORT_LINK})
+            log "failed to create link to ${source} package: ${target}"
+            return ${1}
+        ;;
+        ${E_MAKE_X11_LINK})
+            log "failed to create link to ${source} package: ${target}"
+            return ${1}
+        ;;
+        ${E_INT})
+            log "received interrupt signal. Aborting..."
+            exit ${1}
+        ;;
+        *)
+            log "undefined handler for exit code ${1}"
+            return ${1}
+        ;;
+    esac
+}
+
+log()
+{
+    SEV=${SEV:-notice}
+    DEBUGLVL=${DEBUGLVL:-1}
+
+    [ ${DEBUGLVL} -gt 0 ] || return
+    logger -p daemon.${SEV} -t "${progname}" $(cat <<- EOF
+        ${*}
+EOF)
+}
+
+makelink()
+{
+    local subdir= package= target= ignored= i=
+    local basedir=${2%%/*}
+    local arch="sys/arch/$(machine)"
+
+    case ${1} in
+        M|U|P)
+        ;;
+        R)
+            log "deleted ${tree}/${2}"
+            return
+        ;;
+        *)
+        ;;
+    esac
+
+    case ${2} in
+        ${arch}/conf/*|${arch}/compile/*)
+            [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${2}"
+            return
+        ;;
+        */*)
+            ignored="distrib gnu regress"
+            if [ ${1} == "?" ] ; then
+                [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${2}"
+                return
+            fi
+            for i in ${ignored} ; do
+                if [ ${source} == "openbsd" -a ${basedir} == ${i} ] ; then
+                    [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${2}"
+                    return
+                fi
+            done
+        ;;
+        *)
+            # remove unknown files at the root of cvs tree
+            if [ ${1} == "?" ] ; then
+                rm -- "${tree}/${2}" 2>/dev/null &&
+                    log "removed ${tree}/${2}"
+            fi
+            return
+        ;;
+    esac
+
+    log "fetched ${tree}/${2}"
+
+    cd ${linkbase} 2>/dev/null || except ${E_LINKDB_NOACCESS}
+    case ${source} in
+        openbsd)
+            if [ ${basedir} == "sys" ] ; then
+                target="${tree}/${arch}"
+                if [ ! -h kernel ] ; then
+                    log "creating link to ${target##*/} kernel config: ${target}"
+                    ln -hs "${target}" "kernel" 2>/dev/null ||
+                        except ${E_MAKE_KERN_LINK}
+                fi
+                return
+            fi
+            target="${tree}/${2%/*}"
+            if [ ! -h ${target##*/} ] ; then
+                log "creating link to userland binary source: ${target}"
+                ln -hs ${target} 2>/dev/null || except ${E_MAKE_BSD_LINK}
+            fi
+            return
+        ;;
+        ports)
+            subdir=${2#${basedir}/}
+            package="${subdir%%/*}"
+            target="${tree}/${basedir}/${package}"
+            if [ ! -h ${package} ] ; then
+                log "creating link to ${source} package: ${target}"
+                ln -hs ${target} 2>/dev/null || except ${E_MAKE_PORT_LINK}
+            fi
+            return
+        ;;
+        *)
+            except ${E_UNDEFINED_SRC} ; return
+        ;;
+    esac
+}
+
+cvscmd()
+{
+    local args=
+    local branch=${branch:-stable} # default to stable + patches
+
+    case ${branch} in
+        stable)
+            args="up -rOPENBSD_5_3 -Pd"
+        ;;
+        current)
+            args="up -Pd"
+        ;;
+    esac
+
+    log "Updating ${source}-${branch}: ${tree}"
+    cvs -qd ${cvs_repos} ${args} || { except ${E_CVS_UPDATE} ; return ; }
+}
+
+update_cvs()
+{
+    cvscmd | while read line ; do
+            makelink ${line}
+        done
+    log "Finished updating ${source} source"
+    return
+}
+
+makedb()
+{
+    if [ ! -d ${dbroot} ] ; then
+        log "Creating link database dir under: ${dbroot}"
+        mkdir -m 750 -p ${dbroot}/{src,ports,xenocara} 2>/dev/null
+    fi
+    return
+}
+
+main()
+{
+    local tree= linkbase= source=
+    local umask="022"
+
+    trap "except ${E_INT}" 2
+
+    if [ -r /etc/mk.conf ] ; then
+        . /etc/mk.conf
+    fi
+
+    umask ${umask}
+    makedb || { except ${E_LINKDB_CREATE} ; return ; }
+    for source in ${sources} ; do
+        case ${source} in
+            openbsd)
+                tree="${BSDSRCDIR:-/usr/src}"
+                linkbase="${dbroot}/src"
+            ;;
+            ports)
+                tree="${PORTSDIR:-/usr/ports}"
+                linkbase="${dbroot}/ports"
+            ;;
+            xenocara)
+                tree="${XSRCDIR:-/usr/xenocara}"
+                linkbase="${dbroot}/xenocara"
+            ;;
+            *)
+                except ${E_UNDEFINED_SRC} ; continue
+            ;;
+        esac
+        cd ${tree} 2>/dev/null || { except ${E_CVS_DIR_NOT_EXIST} ; continue ; }
+        update_cvs || { except ${E_CVS_DIR_NOT_EXIST} ; continue ; }
+    done
+    return
+}
+
+main
