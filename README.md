@@ -2,7 +2,7 @@ Utilities to do various things on OpenBSD systems, possibly Linux as well.
 
 diravg.awk:
 --------------
-Utility that displays file distribution statistics which may be useful for 
+Utility that displays file distribution statistics which may be useful for
 tuning filesystem parameters with 'tunefs'.
 
 fsdump:
@@ -50,7 +50,7 @@ environment
 
 quotadistrib.py: (indev)
 ---------------
-Take a prototype user and apply its disk quotas to all the users in the 
+Take a prototype user and apply its disk quotas to all the users in the
 specified groups
 
 quotadistrib.awk: (indev)
