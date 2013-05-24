@@ -127,18 +127,8 @@ BEGIN \
         fnz = row[4]
         fmin = row[5]
         fmax = row[6]
-        favg = fsum = row[7]
-
-        # per directory stats
-        printf fmt_dirc, dirc   # dir count
-        printf fmt_fc, fc       # file count
-        printf fmt_fz, fz       # count of zero-byte files
-        printf fmt_fnz, fnz     # count of files with data
-        printf fmt_fmin, fmin   # smallest sized file
-        printf fmt_fmax, fmax   # largest sized file
-        printf fmt_fsum, fsum   # sum of all file sizes
-        printf fmt_favg, favg   # average file size
-        printf fmt_dir, dir     # directory path
+        fsum = row[7]
+        favg = ""
 
         if (dirc == "")
         {
@@ -161,15 +151,16 @@ BEGIN \
 
         if (fnz != "")
         {
-            # zero-byte files have no weight in our avg file size
-            # calculation
-            favg = sprintf("%d", (fsum / fnz))
-
             withdata[dir]++
             datafiles += fnz
 
             if (fz != "")
                 withmix[dir]++
+
+            # zero-byte files have no weight in our avg file size
+            # calculation
+            favg = sprintf("%d", (fsum / fnz))
+                datasize += favg
         }
 
         if (fc != "")
@@ -181,8 +172,16 @@ BEGIN \
                 emptyfiles += fz
         }
 
-        if (favg != "")
-            datasize += favg
+        # per directory stats
+        printf fmt_dirc, dirc   # dir count
+        printf fmt_fc, fc       # file count
+        printf fmt_fz, fz       # count of zero-byte files
+        printf fmt_fnz, fnz     # count of files with data
+        printf fmt_fmin, fmin   # smallest sized file
+        printf fmt_fmax, fmax   # largest sized file
+        printf fmt_fsum, fsum   # sum of all file sizes
+        printf fmt_favg, favg   # average file size
+        printf fmt_dir, dir     # directory path
     }
 
     totaldirs = countarr(arr)
