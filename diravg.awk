@@ -131,12 +131,12 @@ BEGIN \
         favg = ""
 
         if (dirc == "")
-        {
             if (fc == "")
                 emptydirs[dir]++
+
             else
                 withfiles[dir]++
-        }
+
         else if (fc == "")
             withdirs[dir]++
 
@@ -157,8 +157,6 @@ BEGIN \
             if (fz != "")
                 withmix[dir]++
 
-            # zero-byte files have no weight in our avg file size
-            # calculation
             favg = sprintf("%d", (fsum / fnz))
                 datasize += favg
         }
