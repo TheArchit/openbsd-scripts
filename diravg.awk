@@ -1,6 +1,12 @@
 #!/usr/local/bin/awk -f
 #
-#   diravg.awk  -- gathers file size statistics for a given tree
+#   diravg.awk  -- display file data averages for a given filesystem tree
+#
+#   Utility that displays file distribution statistics which may be useful for
+#   tuning filesystem parameters with 'tunefs' and squid cache settings such
+#   as:
+#       store_avg_object_size
+#       maximum_object_size
 #
 #   Usage: ./diravg.awk /path/to/tree
 #
