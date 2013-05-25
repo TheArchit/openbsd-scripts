@@ -1,6 +1,6 @@
 #!/usr/local/bin/awk -f
 #
-#   diravg.awk  -- display file data averages for a given filesystem tree
+#   dirstats.awk  -- display file data averages for a given filesystem tree
 #
 #   Utility that displays file distribution statistics which may be useful for
 #   tuning filesystem parameters with 'tunefs' and squid cache settings such
@@ -8,7 +8,7 @@
 #       store_avg_object_size
 #       maximum_object_size
 #
-#   Usage: ./diravg.awk /path/to/tree
+#   Usage: ./dirstats.awk /path/to/tree
 #
 #   BUGS:
 #           * won't handle directories with over eight spaces in their name,
