@@ -1,6 +1,6 @@
 Utilities to do various things on OpenBSD systems, possibly Linux as well.
 
-diravg.awk:
+dirstats.awk:
 --------------
 Utility that displays file distribution statistics which may be useful for
 tuning filesystem parameters with 'tunefs'.
