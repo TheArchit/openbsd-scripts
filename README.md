@@ -56,3 +56,7 @@ specified groups
 quotadistrib.awk: (indev)
 ----------------
 Same as quotadistrib.py but written in AWK
+
+update-newsyslog.awk:
+--------------------
+Finds logfiles and adds them to newsyslog.conf with default rotation settings
