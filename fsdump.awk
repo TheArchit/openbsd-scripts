@@ -1,13 +1,13 @@
 #!/usr/bin/awk -f
 #
-# dumpfs -- performs a dump of each filesystem listed by "dump w" in an
-#           odd/even rotation scheme: 0,3,4,7,8,1,2,5,6,9,0
+# fsdump.awk -- performs a dump of each filesystem listed by "dump w" in an
+#               odd/even rotation scheme: 0,3,4,7,8,1,2,5,6,9,0
 #
-#           Tested on OpenBSD 5.2 and 5.3
+#               Tested on OpenBSD 5.2 and 5.3
 
 BEGIN {
 
-    dumpdir   = "/data/fsdump"
+    dumpdir   = "/data/fsdump"  # where the dumps should be kept
     ext       = "gz"
     listfs    = "dump w"
     getdate   = "date \"+%Y%m%d\""
