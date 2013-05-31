@@ -118,9 +118,7 @@ BEGIN \
     fmt_fmax    = "%10s";   printf fmt_fmax,    "fmax:"
     fmt_fsum    = "%10s";   printf fmt_fsum,    "fsum:"
     fmt_favg    = "%10s";   printf fmt_favg,    "favg:"
-    fmt_dir     = " %s\n"
-
-    printf fmt_dir, "path:"
+    fmt_dir     = " %s\n";  printf fmt_dir,     "path:"
 
     for (i in arr)
     {
@@ -192,7 +190,6 @@ BEGIN \
     divisor = countarr(withdata)
 
     print ""
-
     print "Total dirs:", totaldirs
     print "Empty dirs:", countarr(emptydirs) + 0
 
