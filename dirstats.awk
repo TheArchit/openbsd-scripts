@@ -197,21 +197,21 @@ BEGIN \
     {
         print "Non-empty dirs:", countarr(nonemptydirs) + 0
 
-        printf "    %-s %d\n", "containing only subdirs:",
+        printf "\t%-s %d\n", "containing only subdirs:",
                countarr(withdirs) + 0
 
-        printf "    %-s %d\n", "containing only files:",
+        printf "\t%-s %d\n", "containing only files:",
                countarr(withfiles) + 0
 
-        printf "    %-s %d\n", "containing files and subdirs:",
+        printf "\t%-s %d\n", "containing files and subdirs:",
                countarr(withboth) + 0
 
-        printf "    %-s %d\n", "containing empty files:",
+        printf "\t%-s %d\n", "containing empty files:",
                 countarr(withempty) + 0
 
-        printf "    %-s %d\n", "containing non-empty files:", divisor
+        printf "\t%-s %d\n", "containing non-empty files:", divisor
 
-        printf "    %-s %d\n", "containing empty and non-empty files:",
+        printf "\t%-s %d\n", "containing empty and non-empty files:",
                countarr(withmix)
     }
 
@@ -224,10 +224,10 @@ BEGIN \
 
         if (divisor)
         {
-            printf "    %-s %d\n", "avg. count per dir:",
+            printf "\t%-s %d\n", "avg. count per dir:",
                    datafiles / divisor
 
-            printf "    %-s %d\n", "avg. size per dir:",
+            printf "\t%-s %d\n", "avg. size per dir:",
                    datasize / divisor
         }
     }
