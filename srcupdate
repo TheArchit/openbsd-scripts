@@ -7,12 +7,6 @@
 #       * lock execution
 #       * auto-select closest cvs server based on location
 
-progname="${0##*/}"
-cvs_repos="anoncvs@anoncvs.spacehopper.org:/cvs"
-dbroot="/var/db/${progname}"
-sources="openbsd ports xenocara"
-branch="stable" # "current" or "stable"
-
 TRUE="0"
 FALSE="1"
 DEBUGLVL="2" # 0, 1, 2
@@ -49,7 +43,7 @@ except()
             return ${1}
         ;;
         ${E_CVS_DIR_NOT_EXIST})
-            log "[cvs] failed to access: ${tree}. ${source} local sources unvailable"
+            log "[cvs] failed to access: ${tree}. ${source} working copy unvailable"
             return ${1}
         ;;
         ${E_UNDEFINED_SRC})
@@ -92,56 +86,16 @@ log()
     logger -p daemon.${SEV} -t "${progname}" $(cat <<- EOF
         ${*}
 EOF)
+    return
 }
 
 makelink()
 {
-    local subdir= package= target= ignored= i=
-    local basedir=${2%%/*}
-    local arch="sys/arch/$(machine)"
-
-    case ${1} in
-        M|U|P)
-        ;;
-        R)
-            log "deleted ${tree}/${2}"
-            return
-        ;;
-        *)
-        ;;
-    esac
-
-    case ${2} in
-        ${arch}/conf/*|${arch}/compile/*)
-            [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${2}"
-            return
-        ;;
-        */*)
-            ignored="distrib gnu regress"
-            if [ ${1} == "?" ] ; then
-                [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${2}"
-                return
-            fi
-            for i in ${ignored} ; do
-                if [ ${source} == "openbsd" -a ${basedir} == ${i} ] ; then
-                    [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${2}"
-                    return
-                fi
-            done
-        ;;
-        *)
-            # remove unknown files at the root of cvs tree
-            if [ ${1} == "?" ] ; then
-                rm -- "${tree}/${2}" 2>/dev/null &&
-                    log "removed ${tree}/${2}"
-            fi
-            return
-        ;;
-    esac
-
-    log "fetched ${tree}/${2}"
+    local basedir=${1%%/*}
+    local subdir= package= target= i=
 
     cd ${linkbase} 2>/dev/null || except ${E_LINKDB_NOACCESS}
+
     case ${source} in
         openbsd)
             if [ ${basedir} == "sys" ] ; then
@@ -153,7 +107,7 @@ makelink()
                 fi
                 return
             fi
-            target="${tree}/${2%/*}"
+            target="${tree}/${1%/*}"
             if [ ! -h ${target##*/} ] ; then
                 log "creating link to userland binary source: ${target}"
                 ln -hs ${target} 2>/dev/null || except ${E_MAKE_BSD_LINK}
@@ -161,7 +115,7 @@ makelink()
             return
         ;;
         ports)
-            subdir=${2#${basedir}/}
+            subdir=${1#${basedir}/}
             package="${subdir%%/*}"
             target="${tree}/${basedir}/${package}"
             if [ ! -h ${package} ] ; then
@@ -190,15 +144,68 @@ cvscmd()
         ;;
     esac
 
-    log "Updating ${source}-${branch}: ${tree}"
     cvs -qd ${cvs_repos} ${args} || { except ${E_CVS_UPDATE} ; return ; }
+    return
 }
 
 update_cvs()
 {
-    cvscmd | while read line ; do
-            makelink ${line}
-        done
+    local i cvs_fstat cvs_fpath
+    local ignored="distrib gnu regress"
+
+    log "Updating ${source}-${branch}: ${tree}"
+
+    cvscmd | \
+    while read cvs_fstat cvs_fpath ; do
+        case ${cvs_fstat} in
+            M|U|P)
+                # XXX: File updated or modified in the working copy
+            ;;
+            R)
+                log "no longer in repository: ${tree}/${cvs_fpath}"
+                continue
+            ;;
+            *)
+            ;;
+        esac
+
+        if [ ${source} == "openbsd" ] ; then
+            case ${cvs_fpath} in
+                ${arch}/conf/*|${arch}/compile/*)
+                    [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${cvs_fpath}"
+                    continue
+                ;;
+            esac
+            for i in ${ignored} ; do
+                if [ ${cvs_fpath%%*/} == ${i} ]
+                then
+                    [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${cvs_fpath}"
+                    continue
+                fi
+            done
+        fi
+
+        case ${cvs_fpath} in
+            */*)
+                if [ ${cvs_fstat} == "?" ] ; then
+                    [ ${DEBUGLVL} -gt 1 ] && log "ignoring ${cvs_fpath}"
+                    continue
+                fi
+            ;;
+            *)
+                # remove unknown files at the root of cvs tree
+                if [ ${cvs_fstat} == "?" ] ; then
+                    rm -- "${tree}/${cvs_fpath}" 2>/dev/null &&
+                        log "removed unknown file: ${tree}/${cvs_fpath}"
+                fi
+                continue
+            ;;
+        esac
+
+        log "fetched ${tree}/${cvs_fpath}"
+        makelink ${cvs_fpath}
+    done
+
     log "Finished updating ${source} source"
     return
 }
@@ -214,10 +221,16 @@ makedb()
 
 main()
 {
+    local progname="${0##*/}"
+    local cvs_repos="anoncvs@anoncvs.spacehopper.org:/cvs"
+    local sources="openbsd ports xenocara"
+    local dbroot="/var/db/${progname}"
+    local branch="stable" # "current" or "stable"
     local tree= linkbase= source=
+
     local umask="022"
 
-    trap "except ${E_INT}" 2
+    trap "except ${E_INT}" 2 15
 
     if [ -r /etc/mk.conf ] ; then
         . /etc/mk.conf
@@ -228,6 +241,7 @@ main()
     for source in ${sources} ; do
         case ${source} in
             openbsd)
+                arch="sys/arch/$(machine)"
                 tree="${BSDSRCDIR:-/usr/src}"
                 linkbase="${dbroot}/src"
             ;;
@@ -244,7 +258,7 @@ main()
             ;;
         esac
         cd ${tree} 2>/dev/null || { except ${E_CVS_DIR_NOT_EXIST} ; continue ; }
-        update_cvs || { except ${E_CVS_DIR_NOT_EXIST} ; continue ; }
+        update_cvs || continue
     done
     return
 }
