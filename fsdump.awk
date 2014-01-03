@@ -5,44 +5,66 @@
 #
 #               Tested on OpenBSD 5.2 and 5.3
 
-BEGIN {
+function nextlevel(lastlvl)
+{
+    if (lastlvl == 0) return 3
+    if (lastlvl == 1) return 2
+    if (lastlvl == 2) return 5
+    if (lastlvl == 3) return 4
+    if (lastlvl == 4) return 7
+    if (lastlvl == 5) return 6
+    if (lastlvl == 6) return 9
+    if (lastlvl == 7) return 8
+    if (lastlvl == 8) return 1
+    if (lastlvl == 9) return 0
+}
 
-    dumpdir   = "/data/fsdump"  # where the dumps should be kept
+BEGIN \
+{
+    dumpdir   = "/data/fsdump"
     ext       = "gz"
     listfs    = "dump w"
     getdate   = "date \"+%Y%m%d\""
     mntcmd    = "mount -u -o"
     fsckcmd   = "fsck -fy"
 
-    sub(/\/+$/,"",dumpdir)
+    sub(/\/+$/, "", dumpdir)
 
-    getdate | getline date ; close(getdate)
+    getdate | getline date
+    close(getdate)
 
-    # learn mount options from fstab
+    # Learn each filesystem's mount options from fstab
     while ((getline < "/etc/fstab") > 0)
-    {
         mntopts[$2] = $4
-    }
+
     close("/etc/fstab")
 
     while ((listfs | getline) > 0)
     {
         remount = 0
 
-        # skip first line of dump's output
-        if (!lno) { lno++ ; continue }
-        gsub(/[ \t\\(\\),>]+/," ")
+        # Jump the first line of dump's output and make the rest easier
+        # to parse
+        if (!lno)
+        {
+            lno++
+            continue
+        }
 
+        gsub(/[ \t\\(\\),>]+/, " ")
+
+        # Non-root filesystems are remounted read-only and checked with fsck
         if (!root && $2 == "/")
         {
-            fs = "root" # found the root fs
+            fs = "root"
             root++
         }
         else
         {
-            # this isn't the root (/) filesystem, so try to
-            # remount it in read-only and force an fsck
-            fs = $2 ; sub(/^\//,"",fs) ; sub(/\//,"_",fs)
+            fs = $2
+            sub(/^\//,"", fs)
+            sub(/\//,"_", fs)
+
             mntargs = ( "ro " $2 " >/dev/null 2>&1" )
 
             if (system(mntcmd mntargs) == 0)
@@ -50,34 +72,24 @@ BEGIN {
                 remount = 1
                 print "Filesystem remounted as rdonly:", $2
                 print "Running fsck:", $2
-                system(fsckcmd " " $2) ; close(fsckcmd " " $2)
+                system(fsckcmd " " $2)
+                close(fsckcmd " " $2)
             }
             close(mntcmd mntargs)
             mntargs = ""
         }
 
-        # last dump:  next dump:
-        # ---------   ---------
-        (($6 == 9) && $6 = 0) ||
-        (($6 == 8) && $6 = 1) ||
-        (($6 == 7) && $6 = 8) ||
-        (($6 == 6) && $6 = 9) ||
-        (($6 == 5) && $6 = 6) ||
-        (($6 == 4) && $6 = 7) ||
-        (($6 == 3) && $6 = 4) ||
-        (($6 == 2) && $6 = 5) ||
-        (($6 == 1) && $6 = 2) ||
-        (($6 == 0) && $6 = 3)
+        lvl = nextlevel($6)
 
-        outfile = (dumpdir "/" date "-" fs "." $6 "." ext)
-        do_dump = ("dump " $6 "auf - " $1 " | gzip -9 > " outfile)
+        outfile = (dumpdir "/" date "-" fs "." lvl "." ext)
+        do_dump = ("dump " lvl "auf - " $1 " | gzip -9 > " outfile)
 
-        # perform the dump
+        # Dump and remount the filesystem
         print "Dumping filesystem:", $2
-        system(do_dump) ; close(do_dump)
+        system(do_dump)
+        close(do_dump)
 
-        # mount the filesystem with options from fstab
-        if ( remount == 1 && $2 in mntopts )
+        if (remount == 1 && $2 in mntopts)
         {
             print "Remounting", $2, "with options:", mntopts[$2]
             system(mntcmd mntopts[$2] " " $2)
