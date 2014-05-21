@@ -82,7 +82,7 @@ BEGIN \
         lvl = nextlevel($6)
 
         outfile = (dumpdir "/" date "-" fs "." lvl "." ext)
-        do_dump = ("dump " lvl "auf - " $1 " | gzip -9 > " outfile)
+        do_dump = ("dump " lvl "auf - -h0 " $1 " | gzip -9 > " outfile)
 
         # Dump and remount the filesystem
         print "Dumping filesystem:", $2
