@@ -137,7 +137,7 @@ cvscmd()
 
     case ${branch} in
         stable)
-            args="up -rOPENBSD_5_4 -Pd"
+            args="up -rOPENBSD_5_5 -Pd"
         ;;
         current)
             args="up -Pd"
